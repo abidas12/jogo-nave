@@ -1,21 +1,44 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
-/// Controla a taxa de tiro do jogador e instancia proj�teis.
+/// Controla o disparo de tiros da nave.
+/// Dispara projÃ©teis para a direita (em direÃ§Ã£o aos meteoros).
 /// </summary>
 public class PlayerShooting : MonoBehaviour
 {
+    [Header("ConfiguraÃ§Ã£o de Disparo")]
     [SerializeField] private GameObject bulletPrefab;
-    [SerializeField] private Transform firePoint; // posi��o de sa�da do tiro
-    [SerializeField] private float fireRate = 0.26f; // segundos entre tiros
+    [SerializeField] private Transform firePoint;
+    [SerializeField] private float fireRate = 0.22f;
 
     private float fireCooldown = 0f;
+    private Transform projectilesContainer;
+
+    private void Start()
+    {
+        if (firePoint == null)
+        {
+            Transform gun = transform.Find("Playergun");
+            firePoint = (gun != null) ? gun : transform;
+        }
+
+        GameObject projObj = GameObject.Find("Projectiles");
+        if (projObj == null)
+        {
+            projObj = new GameObject("Projectiles");
+        }
+        projectilesContainer = projObj.transform;
+    }
 
     private void Update()
     {
+        // NÃ£o permite atirar se o jogo estiver encerrado ou pausado por vitÃ³ria/derrota
+        if (GameManager.Instance != null && GameManager.Instance.IsGameOver)
+            return;
+
         fireCooldown -= Time.deltaTime;
 
-        // Disparo por tecla Espa�o ou bot�o esquerdo do mouse
+        // Disparo por EspaÃ§o ou Clique esquerdo
         if ((Input.GetKey(KeyCode.Space) || Input.GetMouseButton(0)) && fireCooldown <= 0f)
         {
             Shoot();
@@ -25,14 +48,17 @@ public class PlayerShooting : MonoBehaviour
 
     private void Shoot()
     {
-        if (bulletPrefab == null || firePoint == null) return;
+        if (bulletPrefab == null) return;
 
-        GameObject b = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity, GameObject.Find("Projectiles").transform);
+        Vector3 spawnPos = firePoint != null ? firePoint.position : transform.position;
+
+        // Side-scroller: tiros vÃ£o para a direita
+        Vector2 dir = Vector2.right;
+
+        GameObject b = Instantiate(bulletPrefab, spawnPos, Quaternion.identity, projectilesContainer);
         Bullet bullet = b.GetComponent<Bullet>();
         if (bullet != null)
         {
-            // Para side-scroller, atira para a direita; ajuste se for top-down
-            Vector2 dir = Vector2.right;
             bullet.Initialize(dir);
         }
     }

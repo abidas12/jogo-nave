@@ -1,20 +1,42 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 /// <summary>
-/// Spawna inimigos em intervalos regulares em posições Y aleatórias.
+/// Spawna meteoros continuamente na borda direita da tela em alturas aleatÃƒÂ³rias.
 /// </summary>
 public class EnemySpawner : MonoBehaviour
 {
+    [Header("Spawn Settings")]
     [SerializeField] private GameObject enemyPrefab;
-    [SerializeField] private float spawnInterval = 1.2f;
-    [SerializeField] private float spawnX = 12f; // posição X onde inimigos aparecem
-    [SerializeField] private float minY = -3.5f;
-    [SerializeField] private float maxY = 3.5f;
+    [SerializeField] private float spawnInterval = 1.1f;
+    [SerializeField] private float spawnX = 11.5f;
+    [SerializeField] private float minY = -3.8f;
+    [SerializeField] private float maxY = 3.8f;
 
     private float timer = 0f;
+    private Transform enemiesContainer;
+
+    private void Start()
+    {
+        GameObject enemiesObj = GameObject.Find("Enemies");
+        if (enemiesObj == null)
+        {
+            enemiesObj = new GameObject("Enemies");
+        }
+        enemiesContainer = enemiesObj.transform;
+
+        // Se o enemyPrefab nÃƒÂ£o estiver atribuÃƒÂ­do no inspector, busca no Resources ou Prefabs
+        if (enemyPrefab == null)
+        {
+            enemyPrefab = Resources.Load<GameObject>("Enemy");
+        }
+    }
 
     private void Update()
     {
+        // Se o jogo acabou ou venceu, nÃƒÂ£o gera novos meteoros
+        if (GameManager.Instance != null && GameManager.Instance.IsGameOver)
+            return;
+
         timer -= Time.deltaTime;
         if (timer <= 0f)
         {
@@ -25,8 +47,11 @@ public class EnemySpawner : MonoBehaviour
 
     private void SpawnEnemy()
     {
+        if (enemyPrefab == null) return;
+
         float y = Random.Range(minY, maxY);
         Vector3 pos = new Vector3(spawnX, y, 0f);
-        Instantiate(enemyPrefab, pos, Quaternion.identity, GameObject.Find("Enemies").transform);
+
+        Instantiate(enemyPrefab, pos, Quaternion.identity, enemiesContainer);
     }
 }

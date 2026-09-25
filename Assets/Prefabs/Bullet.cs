@@ -1,40 +1,86 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
-/// Comportamento do proj�til: movimento em linha reta e destrui��o ao colidir.
+/// Comportamento do projÃ©til:
+/// Movimento em linha reta, rotaÃ§Ã£o alinhada com o disparo e destruiÃ§Ã£o ao colidir com meteoros.
 /// </summary>
 public class Bullet : MonoBehaviour
 {
-    [SerializeField] private float speed = 19f;
-    [SerializeField] private float lifeTime = 4f;
+    [Header("ConfiguraÃ§Ãµes do ProjÃ©til")]
+    [SerializeField] private float speed = 18f;
+    [SerializeField] private float lifeTime = 3.5f;
 
-    private Vector2 direction;
+    private Vector2 direction = Vector2.right;
+    private bool hasHit = false;
 
     private void Start()
     {
-        // Destr�i automaticamente ap�s lifeTime segundos
         Destroy(gameObject, lifeTime);
     }
 
-    // Chamado pelo PlayerShooting ao instanciar
     public void Initialize(Vector2 dir)
     {
         direction = dir.normalized;
+
+        // Ajusta a rotaÃ§Ã£o visual do projÃ©til para apontar na direÃ§Ã£o do tiro
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0f, 0f, angle - 90f);
     }
 
     private void Update()
     {
-        transform.Translate(direction * speed * Time.deltaTime);
+        transform.Translate(direction * speed * Time.deltaTime, Space.World);
+
+        // Se sair da tela, destrÃ³i
+        if (transform.position.x > 16f || transform.position.x < -16f ||
+            transform.position.y > 10f || transform.position.y < -10f)
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // Se colidir com inimigo, notifica e destr�i
-        if (other.CompareTag("Enemy"))
+        CheckHit(other.gameObject);
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        CheckHit(collision.gameObject);
+    }
+
+    private void CheckHit(GameObject hitObj)
+    {
+        if (hasHit) return;
+
+        // Procura componente Meteor ou Enemy
+        Meteor meteor = hitObj.GetComponent<Meteor>();
+        if (meteor == null)
         {
-            // Chama m�todo no inimigo para ser destru�do
-            Enemy Enemy = other.GetComponent<Enemy>();
-            if (Enemy != null) Enemy.OnHit();
+            meteor = hitObj.GetComponentInParent<Meteor>();
+        }
+
+        if (meteor != null || hitObj.CompareTag("Enemy"))
+        {
+            hasHit = true;
+            if (meteor != null)
+            {
+                meteor.OnHit();
+            }
+            else
+            {
+                Enemy enemy = hitObj.GetComponent<Enemy>();
+                if (enemy != null)
+                {
+                    enemy.OnHit();
+                }
+                else
+                {
+                    if (GameManager.Instance != null)
+                        GameManager.Instance.AddScore(1);
+                    Destroy(hitObj);
+                }
+            }
 
             Destroy(gameObject);
         }
